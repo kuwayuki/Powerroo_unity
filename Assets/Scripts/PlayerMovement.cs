@@ -11,11 +11,14 @@ public class PlayerMovement : MonoBehaviour
     private static readonly Quaternion AxisCompensation = Quaternion.Euler(-90f, 0f, 0f);
 
     private CharacterController controller;
+    private WalkAnimation walkAnimation;
     private float verticalVelocity;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        if (modelTransform != null)
+            walkAnimation = modelTransform.GetComponent<WalkAnimation>();
     }
 
     private void Update()
@@ -56,6 +59,9 @@ public class PlayerMovement : MonoBehaviour
 
             move = inputDir * moveSpeed;
         }
+
+        if (walkAnimation != null)
+            walkAnimation.SetMoving(inputDir.sqrMagnitude > 0.01f);
 
         move.y = verticalVelocity;
         controller.Move(move * Time.deltaTime);
