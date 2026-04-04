@@ -10,14 +10,17 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 8f;
     [SerializeField] private float timeToRun = 3f;
     [SerializeField] private Transform modelTransform;
+    [SerializeField] private RuntimeAnimatorController idleController;
 
     private static readonly Quaternion AxisCompensation = Quaternion.identity;
 
     private CharacterController controller;
     private WalkAnimation walkAnimation;
+    private Animator animator;
     private float verticalVelocity;
     private float moveHoldTime;
     private bool jumpRequested;
+    private bool wasMoving;
 
     private void Awake()
     {
@@ -25,7 +28,16 @@ public class PlayerMovement : MonoBehaviour
         if (modelTransform == null)
             modelTransform = transform.Find("Powerroo_born");
         if (modelTransform != null)
+        {
             walkAnimation = modelTransform.GetComponent<WalkAnimation>();
+            animator = modelTransform.GetComponent<Animator>();
+        }
+    }
+
+    private void Start()
+    {
+        // Start in idle
+        SetIdleMode(true);
     }
 
     private void Update()
@@ -92,6 +104,17 @@ public class PlayerMovement : MonoBehaviour
             move = inputDir * currentSpeed;
         }
 
+        // Switch between idle animation and walk animation
+        if (isMoving && !wasMoving)
+        {
+            SetIdleMode(false);
+        }
+        else if (!isMoving && wasMoving)
+        {
+            SetIdleMode(true);
+        }
+        wasMoving = isMoving;
+
         if (walkAnimation != null)
         {
             walkAnimation.SetMoving(isMoving);
@@ -100,5 +123,25 @@ public class PlayerMovement : MonoBehaviour
 
         move.y = verticalVelocity;
         controller.Move(move * Time.deltaTime);
+    }
+
+    private void SetIdleMode(bool idle)
+    {
+        if (animator == null || idleController == null) return;
+
+        if (idle)
+        {
+            if (walkAnimation != null)
+                walkAnimation.enabled = false;
+            animator.runtimeAnimatorController = idleController;
+            animator.enabled = true;
+        }
+        else
+        {
+            animator.enabled = false;
+            animator.runtimeAnimatorController = null;
+            if (walkAnimation != null)
+                walkAnimation.enabled = true;
+        }
     }
 }
