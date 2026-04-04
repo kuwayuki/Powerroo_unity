@@ -1,0 +1,11 @@
+# Exported from Nomad Sculpt
+
+newmtl Sphere
+ map_Kd Sphere_color_2.png
+ map_roughness Sphere_roughness_2.png
+ map_Pr Sphere_roughness_2.png
+ map_metallic Sphere_metalness_2.png
+ map_Pm Sphere_metalness_2.png
+ Kd 1.000000 1.000000 1.000000
+ Pr 0.250000
+ Pm 0.000000

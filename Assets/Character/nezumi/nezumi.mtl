@@ -1,0 +1,7 @@
+# Exported from Nomad Sculpt
+
+newmtl 球_13
+ map_Kd 球_13_color_1.png
+ Kd 0.246053 0.036600 0.011595
+ Pr 0.564706
+ Pm 0.000000
