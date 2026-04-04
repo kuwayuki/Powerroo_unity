@@ -7,15 +7,17 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float runSpeed = 10f;
     [SerializeField] private float rotationSpeed = 720f;
     [SerializeField] private float gravity = -20f;
+    [SerializeField] private float jumpForce = 8f;
     [SerializeField] private float timeToRun = 3f;
     [SerializeField] private Transform modelTransform;
 
-    private static readonly Quaternion AxisCompensation = Quaternion.Euler(0f, 180f, 0f);
+    private static readonly Quaternion AxisCompensation = Quaternion.identity;
 
     private CharacterController controller;
     private WalkAnimation walkAnimation;
     private float verticalVelocity;
     private float moveHoldTime;
+    private bool jumpRequested;
 
     private void Awake()
     {
@@ -55,13 +57,21 @@ public class PlayerMovement : MonoBehaviour
         bool isRunning = moveHoldTime >= timeToRun;
         float currentSpeed = isRunning ? runSpeed : moveSpeed;
 
-        if (controller.isGrounded)
+        bool spaceDown = keyboard.spaceKey.isPressed;
+        if (spaceDown && !jumpRequested && controller.isGrounded)
+        {
+            jumpRequested = true;
+            verticalVelocity = jumpForce;
+        }
+        else if (controller.isGrounded && !spaceDown)
         {
             verticalVelocity = -2f;
+            jumpRequested = false;
         }
         else
         {
             verticalVelocity += gravity * Time.deltaTime;
+            if (!spaceDown) jumpRequested = false;
         }
 
         Vector3 move = Vector3.zero;

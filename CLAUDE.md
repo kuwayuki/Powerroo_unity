@@ -17,11 +17,13 @@ Powerroo is a Unity 6 (6000.4.1f1) 3D character action game featuring a kangaroo
 ## Architecture
 
 ### Game Loop
-- `PlayerMovement` — WASD keyboard input → CharacterController movement with gravity. Handles FBX Z-up → Y-up axis compensation via `AxisCompensation` quaternion applied to the model child transform.
+- `PlayerMovement` — WASD keyboard input → CharacterController movement with gravity. Auto-finds `Powerroo_born` as `modelTransform`. `AxisCompensation` is `Quaternion.identity` (Powerroo_born needs no facing correction). Walk/run speed with hold-time transition.
+- `WalkAnimation` — Procedural walk/run animation via direct bone `localRotation` manipulation. Bone paths are `[SerializeField]` (default: `CharacterArmature/root/...` for Powerroo_born). Swings arms, legs, and tail with walk/run blend.
 - `CameraFollow` — Smooth third-person camera following the player with configurable offset and LookAt.
 
 ### Character Asset
-- `Assets/Character/Powerroo.fbx` — Main character model (Git LFS, ~122MB)
+- `Assets/Character/Powerroo_born.fbx` — Active character model (SD-style, ~0.65 units tall). Bone root: `CharacterArmature/root`. Animator has no controller (procedural animation only), `ApplyRootMotion = false`.
+- `Assets/Character/Powerroo.fbx` — Original character model (Git LFS, ~122MB, disabled in scene)
 - `Assets/Character/textures/` — Per-part baked textures (body, head, arms, legs, horns, tail, eyes, mouth, ribbons)
 
 ### Scenes
@@ -47,5 +49,5 @@ This project uses `io.github.hatayama.uloopmcp` for Unity ↔ Claude Code integr
 ## Key Conventions
 
 - **Input**: Currently reads `Keyboard.current` directly in `PlayerMovement`. The InputSystem_Actions asset defines Player/UI action maps but is not yet wired to the scripts.
-- **FBX Axis**: Blender-exported FBX uses Z-up. A static `Quaternion.Euler(-90, 0, 0)` compensates in code. New character scripts must account for this.
+- **FBX Axis**: Powerroo_born's `CharacterArmature` has built-in `-90° X` rotation for Z-up → Y-up. `PlayerMovement.AxisCompensation` is identity (no extra compensation needed). New character scripts must account for bone paths starting with `CharacterArmature/root/`.
 - **Serialized Fields**: Use `[SerializeField] private` pattern for inspector-exposed values (not `public`).
