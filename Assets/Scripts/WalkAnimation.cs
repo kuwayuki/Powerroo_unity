@@ -2,11 +2,20 @@ using UnityEngine;
 
 public class WalkAnimation : MonoBehaviour
 {
+    [Header("Walk")]
     [SerializeField] private float swingAngle = 30f;
     [SerializeField] private float swingSpeed = 8f;
     [SerializeField] private float tailSwingAngle = 20f;
     [SerializeField] private float tailSwingSpeed = 6f;
+
+    [Header("Run")]
+    [SerializeField] private float runSwingAngle = 45f;
+    [SerializeField] private float runSwingSpeed = 14f;
+    [SerializeField] private float runTailSwingAngle = 30f;
+
+    [Header("Transition")]
     [SerializeField] private float smoothReturnSpeed = 8f;
+    [SerializeField] private float stateBlendSpeed = 5f;
 
     private Transform armL;
     private Transform armR;
@@ -21,23 +30,35 @@ public class WalkAnimation : MonoBehaviour
     private Quaternion tailRest;
 
     private bool isMoving;
+    private bool isRunning;
     private float phase;
+    private float runBlend; // 0 = walk, 1 = run
 
     public void SetMoving(bool moving)
     {
         isMoving = moving;
     }
 
+    public void SetRunning(bool running)
+    {
+        isRunning = running;
+    }
+
+    [Header("Bone Paths")]
+    [SerializeField] private string armLPath = "CharacterArmature/root/body/shoulder_l/arm_l";
+    [SerializeField] private string armRPath = "CharacterArmature/root/body/shoulder_r/arm_r";
+    [SerializeField] private string legLPath = "CharacterArmature/root/leg_l";
+    [SerializeField] private string legRPath = "CharacterArmature/root/leg_r";
+    [SerializeField] private string tailPath = "CharacterArmature/root/body/tail";
+
     private void Awake()
     {
-        // Find bones by path
-        armL = transform.Find("root/body/arm_l");
-        armR = transform.Find("root/body/arm_r");
-        legL = transform.Find("root/leg_l");
-        legR = transform.Find("root/leg_r");
-        tail = transform.Find("root/body/tail");
+        armL = transform.Find(armLPath);
+        armR = transform.Find(armRPath);
+        legL = transform.Find(legLPath);
+        legR = transform.Find(legRPath);
+        tail = transform.Find(tailPath);
 
-        // Store rest poses
         if (armL != null) armLRest = armL.localRotation;
         if (armR != null) armRRest = armR.localRotation;
         if (legL != null) legLRest = legL.localRotation;
@@ -47,32 +68,36 @@ public class WalkAnimation : MonoBehaviour
 
     private void Update()
     {
+        // Blend between walk and run
+        float targetBlend = isRunning ? 1f : 0f;
+        runBlend = Mathf.MoveTowards(runBlend, targetBlend, stateBlendSpeed * Time.deltaTime);
+
+        float currentAngle = Mathf.Lerp(swingAngle, runSwingAngle, runBlend);
+        float currentSpeed = Mathf.Lerp(swingSpeed, runSwingSpeed, runBlend);
+        float currentTailAngle = Mathf.Lerp(tailSwingAngle, runTailSwingAngle, runBlend);
+
         if (isMoving)
         {
-            phase += Time.deltaTime * swingSpeed;
+            phase += Time.deltaTime * currentSpeed;
 
             float swing = Mathf.Sin(phase);
 
-            // Legs swing forward/backward (opposite to each other)
             if (legL != null)
-                legL.localRotation = legLRest * Quaternion.Euler(swing * swingAngle, 0f, 0f);
+                legL.localRotation = legLRest * Quaternion.Euler(swing * currentAngle, 0f, 0f);
             if (legR != null)
-                legR.localRotation = legRRest * Quaternion.Euler(-swing * swingAngle, 0f, 0f);
+                legR.localRotation = legRRest * Quaternion.Euler(-swing * currentAngle, 0f, 0f);
 
-            // Arms swing opposite to same-side leg
             if (armL != null)
-                armL.localRotation = armLRest * Quaternion.Euler(-swing * swingAngle * 0.7f, 0f, 0f);
+                armL.localRotation = armLRest * Quaternion.Euler(-swing * currentAngle * 0.7f, 0f, 0f);
             if (armR != null)
-                armR.localRotation = armRRest * Quaternion.Euler(swing * swingAngle * 0.7f, 0f, 0f);
+                armR.localRotation = armRRest * Quaternion.Euler(swing * currentAngle * 0.7f, 0f, 0f);
 
-            // Tail sways side to side
-            float tailSway = Mathf.Sin(phase * (tailSwingSpeed / swingSpeed));
+            float tailSway = Mathf.Sin(phase * (tailSwingSpeed / currentSpeed));
             if (tail != null)
-                tail.localRotation = tailRest * Quaternion.Euler(0f, tailSway * tailSwingAngle, 0f);
+                tail.localRotation = tailRest * Quaternion.Euler(0f, tailSway * currentTailAngle, 0f);
         }
         else
         {
-            // Smoothly return to rest pose
             float t = smoothReturnSpeed * Time.deltaTime;
             if (legL != null) legL.localRotation = Quaternion.Slerp(legL.localRotation, legLRest, t);
             if (legR != null) legR.localRotation = Quaternion.Slerp(legR.localRotation, legRRest, t);
@@ -81,6 +106,7 @@ public class WalkAnimation : MonoBehaviour
             if (tail != null) tail.localRotation = Quaternion.Slerp(tail.localRotation, tailRest, t);
 
             phase = 0f;
+            runBlend = 0f;
         }
     }
 }

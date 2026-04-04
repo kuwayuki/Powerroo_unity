@@ -4,19 +4,24 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float runSpeed = 10f;
     [SerializeField] private float rotationSpeed = 720f;
     [SerializeField] private float gravity = -20f;
+    [SerializeField] private float timeToRun = 3f;
     [SerializeField] private Transform modelTransform;
 
-    private static readonly Quaternion AxisCompensation = Quaternion.Euler(-90f, 0f, 0f);
+    private static readonly Quaternion AxisCompensation = Quaternion.Euler(0f, 180f, 0f);
 
     private CharacterController controller;
     private WalkAnimation walkAnimation;
     private float verticalVelocity;
+    private float moveHoldTime;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        if (modelTransform == null)
+            modelTransform = transform.Find("Powerroo_born");
         if (modelTransform != null)
             walkAnimation = modelTransform.GetComponent<WalkAnimation>();
     }
@@ -35,6 +40,20 @@ public class PlayerMovement : MonoBehaviour
         if (keyboard.sKey.isPressed) v -= 1f;
 
         Vector3 inputDir = new Vector3(h, 0f, v).normalized;
+        bool isMoving = inputDir.sqrMagnitude > 0.01f;
+
+        // Track hold time for run transition
+        if (isMoving)
+        {
+            moveHoldTime += Time.deltaTime;
+        }
+        else
+        {
+            moveHoldTime = 0f;
+        }
+
+        bool isRunning = moveHoldTime >= timeToRun;
+        float currentSpeed = isRunning ? runSpeed : moveSpeed;
 
         if (controller.isGrounded)
         {
@@ -47,21 +66,27 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 move = Vector3.zero;
 
-        if (inputDir.sqrMagnitude > 0.01f)
+        if (isMoving)
         {
-            // Rotate the model child with axis compensation for FBX Z-up → Y-up
             if (modelTransform != null)
             {
-                Quaternion targetRot = Quaternion.LookRotation(inputDir, Vector3.up) * AxisCompensation;
+                // Add forward lean when running
+                float leanAngle = isRunning ? 15f : 0f;
+                Quaternion faceDir = Quaternion.LookRotation(inputDir, Vector3.up);
+                Quaternion lean = Quaternion.Euler(leanAngle, 0f, 0f);
+                Quaternion targetRot = faceDir * AxisCompensation * lean;
                 modelTransform.rotation = Quaternion.RotateTowards(
                     modelTransform.rotation, targetRot, rotationSpeed * Time.deltaTime);
             }
 
-            move = inputDir * moveSpeed;
+            move = inputDir * currentSpeed;
         }
 
         if (walkAnimation != null)
-            walkAnimation.SetMoving(inputDir.sqrMagnitude > 0.01f);
+        {
+            walkAnimation.SetMoving(isMoving);
+            walkAnimation.SetRunning(isRunning);
+        }
 
         move.y = verticalVelocity;
         controller.Move(move * Time.deltaTime);
