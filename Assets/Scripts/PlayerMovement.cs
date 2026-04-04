@@ -36,7 +36,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Start()
     {
-        // Start in idle
+        SoundManager.EnsureExists();
         SetIdleMode(true);
     }
 
@@ -74,6 +74,8 @@ public class PlayerMovement : MonoBehaviour
         {
             jumpRequested = true;
             verticalVelocity = jumpForce;
+            if (SoundManager.Instance != null)
+                SoundManager.Instance.PlayJumpSound();
         }
         else if (controller.isGrounded && !spaceDown)
         {
