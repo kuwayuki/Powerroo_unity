@@ -9,6 +9,7 @@ public class AnimationBrowser : MonoBehaviour
 
     private int currentIndex = -1;
     private bool previewing;
+    public bool IsPreviewing => previewing;
     private bool showList;
     private bool showHud = true;
     private Vector2 scrollPos;
@@ -16,12 +17,14 @@ public class AnimationBrowser : MonoBehaviour
     private AnimatorOverrideController overrideController;
     private Animator animator;
     private WalkAnimation walkAnimation;
+    private PlayerMovement playerMovement;
     private Text display2Text;
 
     private void Awake()
     {
         animator = GetComponentInChildren<Animator>();
         walkAnimation = GetComponentInChildren<WalkAnimation>();
+        playerMovement = GetComponent<PlayerMovement>();
         CreateDisplay2UI();
     }
 
@@ -136,7 +139,9 @@ public class AnimationBrowser : MonoBehaviour
             animator.runtimeAnimatorController = null;
         }
 
-        if (walkAnimation != null)
+        if (playerMovement != null)
+            playerMovement.ResetAnimationState();
+        else if (walkAnimation != null)
             walkAnimation.enabled = true;
 
         if (display2Text != null)

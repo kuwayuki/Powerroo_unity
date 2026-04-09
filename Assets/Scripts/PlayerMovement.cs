@@ -21,10 +21,12 @@ public class PlayerMovement : MonoBehaviour
     private float moveHoldTime;
     private bool jumpRequested;
     private bool wasMoving;
+    private AnimationBrowser animBrowser;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        animBrowser = GetComponent<AnimationBrowser>();
         if (modelTransform == null)
             modelTransform = transform.Find("Powerroo_born");
         if (modelTransform != null)
@@ -106,25 +108,31 @@ public class PlayerMovement : MonoBehaviour
             move = inputDir * currentSpeed;
         }
 
-        // Switch between idle animation and walk animation
-        if (isMoving && !wasMoving)
+        // Skip idle/walk switching when animation browser is previewing
+        bool browserActive = animBrowser != null && animBrowser.IsPreviewing;
+        if (!browserActive)
         {
-            SetIdleMode(false);
-        }
-        else if (!isMoving && wasMoving)
-        {
-            SetIdleMode(true);
+            if (isMoving && !wasMoving)
+                SetIdleMode(false);
+            else if (!isMoving && wasMoving)
+                SetIdleMode(true);
+
+            if (walkAnimation != null)
+            {
+                walkAnimation.SetMoving(isMoving);
+                walkAnimation.SetRunning(isRunning);
+            }
         }
         wasMoving = isMoving;
 
-        if (walkAnimation != null)
-        {
-            walkAnimation.SetMoving(isMoving);
-            walkAnimation.SetRunning(isRunning);
-        }
-
         move.y = verticalVelocity;
         controller.Move(move * Time.deltaTime);
+    }
+
+    public void ResetAnimationState()
+    {
+        wasMoving = false;
+        SetIdleMode(true);
     }
 
     private void SetIdleMode(bool idle)
