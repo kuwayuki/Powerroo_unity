@@ -10,6 +10,7 @@ public class AnimationBrowser : MonoBehaviour
     private int currentIndex = -1;
     private bool previewing;
     private bool showList;
+    private bool showHud = true;
     private Vector2 scrollPos;
     private string jumpInput = "";
     private AnimatorOverrideController overrideController;
@@ -89,6 +90,10 @@ public class AnimationBrowser : MonoBehaviour
         if (kb.lKey.wasPressedThisFrame)
             showList = !showList;
 
+        // H: toggle HUD
+        if (kb.hKey.wasPressedThisFrame)
+            showHud = !showHud;
+
         // P: stop
         if (kb.pKey.wasPressedThisFrame && previewing)
             StopPreview();
@@ -142,12 +147,12 @@ public class AnimationBrowser : MonoBehaviour
     {
         if (clips == null || currentIndex < 0) return;
 
-        string label = string.Format("[{0}/{1}] {2}\nO/Shift+O: Prev/Next  [/]: +-10  L: List  P: Stop",
+        string label = string.Format("[{0}/{1}] {2}\nO/Shift+O: Prev/Next  [/]: +-10  L: List  P: Stop  H: Hide",
             currentIndex + 1, clips.Length, clips[currentIndex].name);
 
         if (display2Text != null)
         {
-            display2Text.gameObject.SetActive(true);
+            display2Text.gameObject.SetActive(showHud);
             display2Text.text = label;
         }
     }
@@ -156,10 +161,18 @@ public class AnimationBrowser : MonoBehaviour
     {
         if (clips == null || clips.Length == 0) return;
 
-        // HUD
+        // Toggle button (always visible when previewing)
         if (previewing && currentIndex >= 0)
         {
-            string label = string.Format("[{0}/{1}] {2}\nO/Shift+O: Prev/Next  [/]: +-10  L: List  P: Stop",
+            string btnText = showHud ? "H: Hide" : "H: Show";
+            if (GUI.Button(new Rect(10, 10, 70, 25), btnText))
+                showHud = !showHud;
+        }
+
+        // HUD
+        if (previewing && currentIndex >= 0 && showHud)
+        {
+            string label = string.Format("[{0}/{1}] {2}\nO/Shift+O: Prev/Next  [/]: +-10  L: List  P: Stop  H: Hide",
                 currentIndex + 1, clips.Length, clips[currentIndex].name);
 
             var style = new GUIStyle(GUI.skin.label)
@@ -168,7 +181,7 @@ public class AnimationBrowser : MonoBehaviour
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Color.white }
             };
-            GUI.Label(new Rect(10, 10, 600, 60), label, style);
+            GUI.Label(new Rect(10, 40, 600, 60), label, style);
         }
 
         // List panel
